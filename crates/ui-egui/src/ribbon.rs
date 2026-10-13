@@ -1066,7 +1066,11 @@ fn font_combo(app: &mut SheetApp, ui: &mut Ui, st: &Style) {
     let resp = ui.add_sized([150.0, 24.0], egui::Button::new(egui::RichText::new(&name).font(theme::ui_font(12.5))));
     control_keytip(app, ui, &resp, "home.fontName");
     let forced = invoke(app, "home.fontName");
-    let items: Vec<(&str, String)> = FONTS.iter().map(|f| (*f, f.to_string())).collect();
+    // The standard names, then every installed family once the font scan has finished: the same
+    // list as Format Cells. Built only while the list is open or opening, never per frame.
+    let listing = forced || resp.clicked() || egui::Popup::is_id_open(ui.ctx(), resp.id.with("popup"));
+    let names: Vec<String> = if listing { crate::fonts::families() } else { Vec::new() };
+    let items: Vec<(&str, String)> = names.iter().map(|f| (f.as_str(), f.clone())).collect();
     if let ComboResult::Picked(value) = editable_combo(ui, &resp, "font", &name, &items, forced) {
         act(app, "home.fontName", json!({"name": value}));
     }
